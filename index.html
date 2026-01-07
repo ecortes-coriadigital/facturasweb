@@ -18,6 +18,16 @@
         .table-input:hover { border-color: #cbd5e1; background: #f8fafc; }
         .table-input:focus { border-color: #6366f1; background: #ffffff; outline: none; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
         .table-locked { background-color: #f1f5f9; color: #64748b; border: none; cursor: not-allowed; text-align: center; border-radius: 4px; padding: 4px; width: 100%; font-size: 0.7rem; user-select: none; }
+        
+        /* Estilos para celdas seleccionables */
+        .table-select { cursor: pointer; border-radius: 4px; padding: 4px; width: 100%; text-align: center; border: 1px solid transparent; transition: all 0.2s; position: relative; }
+        .table-select:hover { background-color: #e0e7ff; border-color: #6366f1; }
+        
+        /* Tooltip personalizado */
+        .tooltip-text { visibility: hidden; width: 120px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 6px; padding: 5px; position: absolute; z-index: 50; bottom: 125%; left: 50%; margin-left: -60px; opacity: 0; transition: opacity 0.3s; font-size: 0.65rem; pointer-events: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .table-select:hover .tooltip-text { visibility: visible; opacity: 1; }
+        .tooltip-text::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
+
         .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #3498db; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .slide-in { animation: slideIn 0.3s ease-out; }
@@ -28,7 +38,7 @@
 </head>
 <body class="bg-slate-50 font-sans text-slate-800 h-screen flex flex-col overflow-hidden">
 
-    <!-- LOGIN OVERLAY (Pantalla de Acceso) -->
+    <!-- LOGIN OVERLAY -->
     <div id="login-overlay" class="absolute inset-0 bg-slate-900/95 z-50 flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700 relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
@@ -53,6 +63,21 @@
             <p class="text-[10px] text-center text-slate-400 mt-6">
                 <i class="fas fa-lock mr-1"></i> Conexión Segura con Supabase
             </p>
+        </div>
+    </div>
+
+    <!-- SELECTOR MODAL (Nuevo) -->
+    <div id="selector-modal" class="absolute inset-0 bg-slate-900/50 z-40 hidden flex items-center justify-center backdrop-blur-sm fade-in">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm border border-slate-200 overflow-hidden transform transition-all scale-100">
+            <div class="bg-indigo-600 p-3 flex justify-between items-center text-white">
+                <h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-list-ul"></i> Seleccionar Opción</h3>
+                <button onclick="closeSelector()" class="hover:bg-indigo-700 p-1 rounded transition"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 bg-slate-50">
+                <div id="selector-list" class="space-y-2">
+                    <!-- Opciones inyectadas por JS -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -82,14 +107,13 @@
 
     <div class="flex flex-1 overflow-hidden relative">
         
-        <!-- PANEL LATERAL: GESTIÓN DE CONCEPTOS (SLIDE) -->
+        <!-- PANEL LATERAL -->
         <div id="db-panel" class="absolute inset-y-0 right-0 w-full md:w-[450px] bg-white shadow-2xl border-l border-slate-200 transform translate-x-full transition-transform duration-300 z-30 flex flex-col">
             <div class="p-4 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
                 <h2 class="font-bold text-slate-700 flex items-center gap-2"><i class="fas fa-server text-indigo-500"></i> Catálogo Cloud</h2>
                 <button onclick="toggleDatabasePanel()" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-times text-xl"></i></button>
             </div>
             
-            <!-- Zona de Reset -->
             <div class="bg-yellow-50 p-3 border-b border-yellow-100 flex justify-between items-center text-yellow-800">
                 <div class="text-[10px]">
                     <p class="font-bold"><i class="fas fa-history"></i> Memoria de Rotación</p>
@@ -100,7 +124,6 @@
                 </button>
             </div>
 
-            <!-- Formulario Agregar -->
             <div class="p-4 bg-indigo-50 border-b border-indigo-100 shrink-0 space-y-3">
                 <h3 class="text-xs font-bold text-indigo-800 uppercase flex items-center gap-1"><i class="fas fa-plus-circle"></i> Nuevo Concepto</h3>
                 <div class="space-y-2">
@@ -119,7 +142,6 @@
                 </div>
             </div>
             
-            <!-- Lista de Conceptos -->
             <div class="flex-1 overflow-y-auto p-4" id="db-list">
                 <div class="text-center mt-10">
                     <div class="loader mx-auto mb-2"></div>
@@ -147,10 +169,9 @@
                 </div>
             </div>
 
-            <!-- EDITOR DE TABLA (Oculto inicialmente) -->
+            <!-- EDITOR DE TABLA -->
             <div id="editor-area" class="hidden flex-1 flex flex-col bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden slide-in">
                 
-                <!-- Barra de Herramientas -->
                 <div class="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
                     <div class="flex items-center gap-3">
                         <button onclick="resetApp()" class="text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1 border-r border-slate-300 pr-3 transition">
@@ -165,13 +186,18 @@
                     </div>
                     
                     <div class="flex items-center gap-2">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                                <i class="fas fa-building text-slate-400 text-xs"></i>
+                            </div>
+                            <input type="text" id="global-rfc-emisor" placeholder="RFC Emisor (Opcional)" class="pl-7 pr-2 py-1.5 border border-slate-300 rounded text-xs focus:ring-2 focus:ring-indigo-500 outline-none uppercase font-bold w-32" title="RFC Facturadora para el reporte">
+                        </div>
                         <button id="download-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 px-4 rounded shadow-md text-sm flex items-center gap-2 transition transform hover:-translate-y-0.5">
                             <i class="fas fa-file-excel"></i> Descargar .XLS
                         </button>
                     </div>
                 </div>
 
-                <!-- Tabla Scrolleable -->
                 <div class="flex-1 overflow-auto bg-slate-100">
                     <table class="min-w-full divide-y divide-slate-200 border-separate border-spacing-0">
                         <thead class="bg-slate-50 sticky top-0 z-10 shadow-sm">
@@ -182,8 +208,8 @@
                                 <th class="px-3 py-3 text-left text-xs font-bold text-pink-600 uppercase tracking-wider border-b bg-pink-50/30 w-28">Clave SAT</th>
                                 <th class="px-2 py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider border-b w-16 bg-slate-50">Unidad <i class="fas fa-lock text-[9px]"></i></th>
                                 <th class="px-2 py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider border-b w-16 bg-slate-50">Uso <i class="fas fa-lock text-[9px]"></i></th>
-                                <th class="px-2 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider border-b w-16">Forma</th>
-                                <th class="px-2 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider border-b w-16">Metodo</th>
+                                <th class="px-2 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider border-b w-20">Forma <i class="fas fa-hand-pointer text-[9px] text-indigo-400"></i></th>
+                                <th class="px-2 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider border-b w-20">Metodo <i class="fas fa-hand-pointer text-[9px] text-indigo-400"></i></th>
                                 <th class="px-3 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider border-b w-24">Subtotal</th>
                                 <th class="px-3 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider border-b w-20">IVA</th>
                                 <th class="px-3 py-3 text-right text-xs font-bold text-slate-800 uppercase tracking-wider border-b w-24 bg-slate-50">Total</th>
@@ -198,136 +224,104 @@
 
     <!-- LÓGICA DE JAVASCRIPT -->
     <script>
-        // ==========================================
-        // 1. CONFIGURACIÓN DE SUPABASE (REEMPLAZA ESTO)
-        // ==========================================
-        // Ve a Project Settings -> API en Supabase para obtener estos valores
-        const SUPABASE_URL = 'https://pterywrqklbkrurwplad.supabase.co'; // <--- PEGA TU URL AQUÍ
-        const SUPABASE_KEY = 'sb_publishable_lHp-PoCLTFLFdXpkwja4cQ_9lQeUMxb';             // <--- PEGA TU KEY AQUÍ
+        // ... (Supabase config se mantiene igual) ...
+        const SUPABASE_URL = 'https://pterywrqklbkrurwplad.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_lHp-PoCLTFLFdXpkwja4cQ_9lQeUMxb';
         
-        // Inicializar cliente de manera segura
         let supabaseClient;
         try {
-            if (window.supabase) {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            } else {
-                console.error("Librería Supabase no cargó.");
-            }
-        } catch (e) {
-            console.error("Error iniciando Supabase:", e);
-        }
+            if (window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (e) { console.error(e); }
 
-        // ==========================================
-        // 2. ESTADO DE LA APLICACIÓN
-        // ==========================================
         let session = null;
-        let cloudConcepts = []; // Catálogo descargado
-        let globalData = [];    // Datos del Excel procesado
+        let cloudConcepts = []; 
+        let globalData = [];    
         let rawDataCache = null;
 
         // ==========================================
-        // 3. AUTENTICACIÓN Y ARRANQUE
+        // CONFIGURACIÓN DE CATÁLOGOS SAT
         // ==========================================
+        const CATALOGOS = {
+            FORMA: {
+                '03': 'Transferencia electrónica',
+                '99': 'Por definir'
+            },
+            METODO: {
+                'PUE': 'Pago en una exhibición',
+                'PPD': 'Pago en parcialidades'
+            }
+        };
+
+        // ... (Funciones init, auth se mantienen igual) ...
         async function init() {
             if (!supabaseClient) return;
-
-            // Verificar si ya hay sesión
             const { data } = await supabaseClient.auth.getSession();
             session = data.session;
             updateAuthUI();
-
-            // Escuchar cambios (login/logout)
             supabaseClient.auth.onAuthStateChange((_event, _session) => {
                 session = _session;
                 updateAuthUI();
             });
         }
-
         function updateAuthUI() {
             if (session) {
                 document.getElementById('login-overlay').classList.add('hidden');
                 document.getElementById('user-email').textContent = session.user.email;
-                loadCloudConcepts(); // Cargar catálogo al entrar
+                loadCloudConcepts(); 
             } else {
                 document.getElementById('login-overlay').classList.remove('hidden');
             }
         }
-
         async function handleLogin() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const btn = document.getElementById('btn-login');
             const msg = document.getElementById('login-msg');
-
             if(!email || !password) return;
-
             btn.innerHTML = '<div class="loader"></div>';
             msg.classList.add('hidden');
-
-            // 1. Intentar Login
             let { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
             if (error) {
-                // 2. Si falla, intentar Registro (Magic sign-up para MVP)
                 if (error.message.includes("Invalid login")) {
                      let resUp = await supabaseClient.auth.signUp({ email, password });
-                     if (resUp.error) {
-                         msg.textContent = resUp.error.message;
-                         msg.classList.remove('hidden');
-                     } else {
-                         alert("Cuenta creada. Revisa tu correo o intenta ingresar.");
-                     }
-                } else {
-                    msg.textContent = error.message;
-                    msg.classList.remove('hidden');
-                }
+                     if (resUp.error) { msg.textContent = resUp.error.message; msg.classList.remove('hidden'); }
+                     else { alert("Cuenta creada. Revisa tu correo o intenta ingresar."); }
+                } else { msg.textContent = error.message; msg.classList.remove('hidden'); }
             }
             btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Ingresar / Registrarse';
         }
-
         async function handleLogout() {
             await supabaseClient.auth.signOut();
             location.reload();
         }
 
-        // ==========================================
-        // 4. GESTIÓN DEL CATÁLOGO CLOUD
-        // ==========================================
+        // ... (Gestión de Catálogo Cloud igual) ...
         async function loadCloudConcepts() {
             if (!session) return;
             const { data, error } = await supabaseClient.from('conceptos').select('*').order('created_at', { ascending: false });
-            
             if (!error) {
                 cloudConcepts = data || [];
                 renderCloudList();
                 document.getElementById('concept-count').textContent = cloudConcepts.length;
             }
         }
-
         async function addConceptCloud() {
             const rfc = document.getElementById('new-rfc').value.trim().toUpperCase();
             const concepto = document.getElementById('new-concepto').value.trim();
             const clave = document.getElementById('new-clave').value.trim();
             const unidad = document.getElementById('new-unidad').value.trim().toUpperCase() || 'E48';
-
             if (!rfc || !concepto) return alert("RFC y Concepto requeridos");
-
             const { data, error } = await supabaseClient.from('conceptos').insert([
                 { user_id: session.user.id, rfc_cliente: rfc, concepto, clave_sat: clave, unidad }
             ]).select();
-
-            if (error) {
-                alert("Error guardando: " + error.message);
-            } else {
-                // Actualizar localmente para no recargar
+            if (error) alert("Error guardando: " + error.message);
+            else {
                 cloudConcepts.unshift(data[0]);
                 renderCloudList();
-                // Limpiar inputs
                 document.getElementById('new-concepto').value = '';
                 document.getElementById('new-clave').value = '';
             }
         }
-
         async function deleteConceptCloud(id) {
             if(!confirm("¿Eliminar este concepto del catálogo?")) return;
             const { error } = await supabaseClient.from('conceptos').delete().eq('id', id);
@@ -336,23 +330,18 @@
                 renderCloudList();
             }
         }
-
         function renderCloudList() {
             const list = document.getElementById('db-list');
             list.innerHTML = '';
-
-            // Agrupar por RFC
             const grouped = {};
             cloudConcepts.forEach(c => {
                 if(!grouped[c.rfc_cliente]) grouped[c.rfc_cliente] = [];
                 grouped[c.rfc_cliente].push(c);
             });
-
             if (Object.keys(grouped).length === 0) {
                 list.innerHTML = '<div class="text-center mt-10 text-slate-400 text-xs"><i class="fas fa-box-open text-2xl mb-2"></i><br>Catálogo vacío</div>';
                 return;
             }
-
             Object.keys(grouped).forEach(rfc => {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = "mb-3 border border-slate-200 rounded-lg overflow-hidden";
@@ -360,9 +349,7 @@
                     <div class="bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 border-b flex justify-between items-center">
                         <span><i class="fas fa-user-tag mr-1 text-indigo-400"></i> ${rfc}</span>
                         <span class="bg-white px-2 rounded-full border text-[10px] shadow-sm">${grouped[rfc].length}</span>
-                    </div>
-                `;
-                
+                    </div>`;
                 grouped[rfc].forEach(item => {
                     const row = document.createElement('div');
                     row.className = "p-2 bg-white border-b last:border-0 flex justify-between items-center hover:bg-slate-50 group";
@@ -374,36 +361,23 @@
                                 <span>${item.unidad}</span>
                             </div>
                         </div>
-                        <button onclick="deleteConceptCloud(${item.id})" class="text-slate-300 hover:text-red-500 transition px-2 opacity-0 group-hover:opacity-100">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    `;
+                        <button onclick="deleteConceptCloud(${item.id})" class="text-slate-300 hover:text-red-500 transition px-2 opacity-0 group-hover:opacity-100"><i class="fas fa-trash"></i></button>`;
                     groupDiv.appendChild(row);
                 });
                 list.appendChild(groupDiv);
             });
             document.getElementById('concept-count').textContent = cloudConcepts.length;
         }
-
         async function resetCloudCounters() {
-            if(!confirm("⚠️ ¿Resetear contadores?\n\nLa próxima vez que subas un archivo, la rotación empezará desde el concepto #1 para TODOS los clientes.")) return;
-            
-            // Borramos el historial del usuario actual
-            // Usamos un filtro que siempre sea cierto para borrar todo lo de este usuario (RLS aplica)
+            if(!confirm("⚠️ ¿Resetear contadores?")) return;
             const { error } = await supabaseClient.from('historial_rotacion').delete().neq('id', 0); 
-            
-            if(!error) {
-                alert("✅ Contadores reiniciados. Sube tu archivo ahora.");
-            } else {
-                alert("Error: " + error.message);
-            }
+            if(!error) alert("✅ Contadores reiniciados.");
+            else alert("Error: " + error.message);
         }
 
         // ==========================================
-        // 5. PROCESAMIENTO DE EXCEL + LÓGICA DE NEGOCIO
+        // LÓGICA DE PROCESAMIENTO
         // ==========================================
-        
-        // Listener Input
         document.getElementById('file-input').addEventListener('change', async function(evt) {
             const file = evt.target.files[0];
             if (!file) return;
@@ -413,11 +387,8 @@
                 const workbook = XLSX.read(data, {type: 'array'});
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 rawDataCache = XLSX.utils.sheet_to_json(firstSheet, {defval:""});
-                
-                // Transición UI
                 document.getElementById('upload-card').classList.add('hidden');
                 document.getElementById('editor-area').classList.remove('hidden');
-                
                 await processExcelData(rawDataCache);
             };
             reader.readAsArrayBuffer(file);
@@ -425,12 +396,11 @@
 
         async function processExcelData(data) {
             if(data.length === 0) return;
-
-            // 1. Mapeo de Columnas (Inteligente)
             const headers = Object.keys(data[0]);
             const find = (k) => headers.find(h => String(h).toUpperCase().replace(/\s/g, '').includes(k.toUpperCase()));
             const map = {
                 rfcRx: find('RFCCLIENTE') || find('RECEPTOR'),
+                rfcEm: find('RFCEMISOR') || find('RFCFACTURADORA') || find('EMISOR'),
                 con: find('CONCEPTO'),
                 sub: find('SUBTOTAL') || find('IMPORTE'),
                 iva: find('IVA') || find('IMPUESTO'),
@@ -441,87 +411,122 @@
                 cant: find('CANTIDAD')
             };
 
-            // 2. Cargar Historial de Rotación desde Nube (Bulk Fetch)
             const { data: history } = await supabaseClient.from('historial_rotacion').select('*');
             let localCounters = {};
             history?.forEach(h => localCounters[h.rfc_cliente] = h.ultimo_indice);
 
             globalData = [];
+            if (map.rfcEm && data[0][map.rfcEm]) {
+                 document.getElementById('global-rfc-emisor').value = String(data[0][map.rfcEm]).trim().toUpperCase();
+            }
 
-            // 3. Iterar filas
             for (let i = 0; i < data.length; i++) {
                 const row = data[i];
                 const rfc = String(row[map.rfcRx] || "").toUpperCase().replace(/[^A-Z0-9&]/g, '').trim();
+                const rfcEmisor = String(row[map.rfcEm] || "").trim().toUpperCase();
                 
-                // Valores Default
                 let concepto = row[map.con] || "Servicios Profesionales";
                 let clave = "80101600";
                 let unidad = "E48";
                 
-                // --- LÓGICA DE ROTACIÓN ---
-                // Buscamos conceptos en el catálogo cloud descargado
                 const opciones = cloudConcepts.filter(c => c.rfc_cliente === rfc);
-
                 if (opciones.length > 0) {
-                    // Si no existe contador para este cliente, empieza en 0
                     if (localCounters[rfc] === undefined) localCounters[rfc] = 0;
-                    
-                    // Elegir concepto basado en contador (Módulo)
                     const index = localCounters[rfc] % opciones.length;
                     const selected = opciones[index];
-
                     concepto = selected.concepto;
                     clave = selected.clave_sat;
                     unidad = selected.unidad;
-
-                    // Avanzar contador
                     localCounters[rfc]++;
                 }
 
-                // Cálculos Numéricos
                 const sub = parseFloat(row[map.sub]) || 0;
                 const iva = parseFloat(row[map.iva]) || 0;
-                // Si hay desglose usamos la suma, si no el total original
                 const tot = (sub > 0 || iva > 0) ? (sub + iva) : (parseFloat(row[map.tot]) || 0);
+
+                // Normalización de Forma y Método
+                let forma = String(row[map.forma]||"99").padStart(2,'0');
+                if(!CATALOGOS.FORMA[forma]) forma = "99"; // Fallback a Por Definir
+
+                let metodo = (row[map.met]||"PPD").toUpperCase().trim();
+                if(!CATALOGOS.METODO[metodo] && metodo !== "PUE" && metodo !== "PPD") metodo = "PPD"; // Fallback PPD
 
                 globalData.push({
                     RFC: rfc,
+                    RFC_EMISOR: rfcEmisor,
                     CONCEPTO: concepto,
                     CLAVE: clave,
                     UNIDAD: unidad,
                     USO: String(row[map.uso]||"G03").split(' ')[0],
-                    FORMA: String(row[map.forma]||99).padStart(2,'0'),
-                    METODO: (row[map.met]||"PPD").toUpperCase().trim(),
+                    FORMA: forma,
+                    METODO: metodo,
                     SUBTOTAL: sub,
                     IVA: iva,
                     TOTAL: tot
                 });
             }
-
-            // 4. Guardar nuevos contadores en Nube (Async para no bloquear UI)
-            // En un sistema masivo usaríamos RPC, aquí un loop es aceptable para <100 clientes
             updateCloudCounters(localCounters);
-
             renderTable();
         }
 
         async function updateCloudCounters(counters) {
             document.getElementById('process-status').classList.remove('hidden');
-            document.getElementById('process-status').innerHTML = '<i class="fas fa-sync fa-spin"></i> Guardando historial...';
-
+            document.getElementById('process-status').innerHTML = '<i class="fas fa-sync fa-spin"></i> Guardando...';
             for (const [rfc, idx] of Object.entries(counters)) {
                 await supabaseClient.from('historial_rotacion').upsert(
                     { user_id: session.user.id, rfc_cliente: rfc, ultimo_indice: idx },
                     { onConflict: 'user_id, rfc_cliente' }
                 );
             }
-            
-            document.getElementById('process-status').innerHTML = '<i class="fas fa-check-circle"></i> Historial actualizado';
+            document.getElementById('process-status').innerHTML = '<i class="fas fa-check-circle"></i> Actualizado';
             setTimeout(() => document.getElementById('process-status').classList.add('hidden'), 3000);
         }
 
         // ==========================================
-        // 6. RENDERIZADO DE TABLA
+        // GESTIÓN DEL SELECTOR MODAL
+        // ==========================================
+        let currentSelectorRow = -1;
+        let currentSelectorType = null;
+
+        window.openSelector = function(rowIdx, type) {
+            currentSelectorRow = rowIdx;
+            currentSelectorType = type;
+            const list = document.getElementById('selector-list');
+            list.innerHTML = '';
+
+            const options = type === 'FORMA' ? CATALOGOS.FORMA : CATALOGOS.METODO;
+            
+            Object.entries(options).forEach(([code, desc]) => {
+                const div = document.createElement('div');
+                div.className = "p-3 rounded border border-slate-200 hover:bg-indigo-50 hover:border-indigo-300 cursor-pointer flex items-center justify-between transition group";
+                div.onclick = () => selectOption(code);
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded text-xs">${code}</span>
+                        <span class="text-sm text-slate-700 font-medium">${desc}</span>
+                    </div>
+                    <i class="fas fa-check text-indigo-500 opacity-0 group-hover:opacity-100"></i>
+                `;
+                list.appendChild(div);
+            });
+
+            document.getElementById('selector-modal').classList.remove('hidden');
+        };
+
+        window.closeSelector = function() {
+            document.getElementById('selector-modal').classList.add('hidden');
+        };
+
+        window.selectOption = function(value) {
+            if (currentSelectorRow > -1 && currentSelectorType) {
+                globalData[currentSelectorRow][currentSelectorType] = value;
+                renderTable(); // Re-render para actualizar UI y Tooltips
+                closeSelector();
+            }
+        };
+
+        // ==========================================
+        // RENDERIZADO DE TABLA
         // ==========================================
         function renderTable() {
             const tbody = document.getElementById('table-body');
@@ -529,6 +534,9 @@
             document.getElementById('row-count').textContent = globalData.length;
 
             globalData.forEach((row, i) => {
+                const formaDesc = CATALOGOS.FORMA[row.FORMA] || "Desconocido";
+                const metodoDesc = CATALOGOS.METODO[row.METODO] || "Desconocido";
+
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
                 tr.innerHTML = `
@@ -541,8 +549,21 @@
                     <td class="px-2 py-1 bg-slate-50"><input value="${row.UNIDAD}" readonly class="table-locked"></td>
                     <td class="px-2 py-1 bg-slate-50"><input value="${row.USO}" readonly class="table-locked"></td>
                     
-                    <td class="px-2 py-1"><input value="${row.FORMA}" onchange="editData(${i}, 'FORMA', this.value)" class="table-input text-xs text-center text-slate-500 w-full"></td>
-                    <td class="px-2 py-1"><input value="${row.METODO}" onchange="editData(${i}, 'METODO', this.value)" class="table-input text-xs text-center text-slate-500 w-full"></td>
+                    <!-- CELDA FORMA PAGO -->
+                    <td class="px-2 py-1" onclick="openSelector(${i}, 'FORMA')">
+                        <div class="table-select group text-xs text-slate-600 font-bold bg-white">
+                            ${row.FORMA}
+                            <span class="tooltip-text">${formaDesc}</span>
+                        </div>
+                    </td>
+                    
+                    <!-- CELDA METODO PAGO -->
+                    <td class="px-2 py-1" onclick="openSelector(${i}, 'METODO')">
+                        <div class="table-select group text-xs text-slate-600 font-bold bg-white">
+                            ${row.METODO}
+                            <span class="tooltip-text">${metodoDesc}</span>
+                        </div>
+                    </td>
                     
                     <td class="px-2 py-1"><input type="number" step="0.01" value="${row.SUBTOTAL.toFixed(2)}" onchange="editData(${i}, 'SUBTOTAL', this.value)" class="table-input text-right text-xs font-mono text-slate-600"></td>
                     <td class="px-2 py-1"><input type="number" step="0.01" value="${row.IVA.toFixed(2)}" onchange="editData(${i}, 'IVA', this.value)" class="table-input text-right text-xs font-mono text-slate-600"></td>
@@ -567,7 +588,7 @@
         };
 
         // ==========================================
-        // 7. DESCARGA
+        // DESCARGA
         // ==========================================
         const COLUMNAS_FW = [
             'RFC_FACTURADORA', 'RFC_RECEPTOR', 'SUCURSAL_FACTURADORA', 'ES_EXPORTACION',
@@ -575,15 +596,14 @@
             'DIVISA', 'TC', 'SAT_CLAVE_UNIDAD', 'UNIDAD', 'CANTIDAD',
             'CLAVE_SAT_CONCEPTO', 'CONCEPTO', 'IMPORTE', 'OBJETO_IMPUESTOS',
             'PORCIVA', 'IVA_TRAS', 'PORCIEPS', 'IEPS_TRAS', 'TOTAL',
-            'PERIODICIDAD', 'MES', 'ANO', 'REFERENCIAS_COMENTARIOS'
+            'PERIODICIDAD', 'MES', 'ANIO', 'REFERENCIAS_COMENTARIOS'
         ];
 
         document.getElementById('download-btn').addEventListener('click', () => {
             if (globalData.length === 0) return;
-
-            // Mapeo final al formato FW
+            const globalRfcEmisor = document.getElementById('global-rfc-emisor').value.trim().toUpperCase();
             const exportData = globalData.map(d => ({
-                RFC_FACTURADORA: "", // Se llena manual o podría venir del archivo
+                RFC_FACTURADORA: d.RFC_EMISOR || globalRfcEmisor || "",
                 RFC_RECEPTOR: d.RFC,
                 SUCURSAL_FACTURADORA: "MATRIZ",
                 ES_EXPORTACION: "01",
@@ -593,7 +613,7 @@
                 METODO_PAGO: d.METODO,
                 DIVISA: "MXN", TC: 1.0,
                 SAT_CLAVE_UNIDAD: d.UNIDAD,
-                UNIDAD: "UNIDAD DE SERVICIO", // Texto fijo
+                UNIDAD: "UNIDAD DE SERVICIO",
                 CANTIDAD: 1,
                 CLAVE_SAT_CONCEPTO: d.CLAVE,
                 CONCEPTO: d.CONCEPTO,
@@ -601,26 +621,22 @@
                 OBJETO_IMPUESTOS: "02", PORCIVA: 0.16,
                 IVA_TRAS: d.IVA, PORCIEPS: "", IEPS_TRAS: "",
                 TOTAL: d.TOTAL,
-                PERIODICIDAD: "", MES: "", ANO: "", REFERENCIAS_COMENTARIOS: ""
+                PERIODICIDAD: "", MES: "", ANIO: "", REFERENCIAS_COMENTARIOS: ""
             }));
+
+            if (!globalRfcEmisor && !exportData[0].RFC_FACTURADORA) {
+                if(!confirm("⚠️ ADVERTENCIA: No ingresaste un RFC de Emisor y no se detectó en el archivo. La columna A saldrá vacía.\n\n¿Deseas continuar?")) return;
+            }
 
             const ws = XLSX.utils.json_to_sheet(exportData, { header: COLUMNAS_FW });
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Hoja1");
-            XLSX.writeFile(wb, "plantilla_fw.xls", { bookType: 'xls' }); // BIFF8
+            XLSX.writeFile(wb, "plantilla_fw.xls", { bookType: 'xls' }); 
         });
 
-        function resetApp() {
-            location.reload();
-        }
-
-        function toggleDatabasePanel() {
-            document.getElementById('db-panel').classList.toggle('translate-x-full');
-        }
-
-        // Arrancar
+        function resetApp() { location.reload(); }
+        function toggleDatabasePanel() { document.getElementById('db-panel').classList.toggle('translate-x-full'); }
         init();
-
     </script>
 </body>
 </html>
