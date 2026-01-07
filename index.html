@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CORIA - Facturación Cloud Pro</title>
+    <title>Facturación Pro</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS (Excel) -->
@@ -33,13 +33,13 @@
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700 relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-indigo-700 mb-2 tracking-tight">CORIA Cloud</h1>
+                <h1 class="text-3xl font-bold text-indigo-700 mb-2 tracking-tight">Facturación Pro</h1>
                 <p class="text-slate-500 text-sm">Sistema de Facturación Inteligente</p>
             </div>
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1 uppercase">Correo Electrónico</label>
-                    <input type="email" id="email" class="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="usuario@coriadigital.com">
+                    <input type="email" id="email" class="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="usuario@excel.com.mx">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1 uppercase">Contraseña</label>
@@ -60,7 +60,7 @@
     <header class="bg-white border-b border-slate-200 p-4 shadow-sm shrink-0 z-20 flex justify-between items-center">
         <div>
             <h1 class="text-xl font-bold text-indigo-700 flex items-center gap-2">
-                <i class="fas fa-cloud text-indigo-500"></i> CORIA: Facturación Pro
+                <i class="fas fa-cloud text-indigo-500"></i> Facturación Pro
             </h1>
             <div class="flex items-center gap-2 mt-1">
                 <span id="user-email" class="text-xs text-slate-500 font-mono">Cargando...</span>
@@ -575,7 +575,7 @@
             'DIVISA', 'TC', 'SAT_CLAVE_UNIDAD', 'UNIDAD', 'CANTIDAD',
             'CLAVE_SAT_CONCEPTO', 'CONCEPTO', 'IMPORTE', 'OBJETO_IMPUESTOS',
             'PORCIVA', 'IVA_TRAS', 'PORCIEPS', 'IEPS_TRAS', 'TOTAL',
-            'PERIODICIDAD', 'MES', 'ANIO', 'REFERENCIAS_COMENTARIOS'
+            'PERIODICIDAD', 'MES', 'ANO', 'REFERENCIAS_COMENTARIOS'
         ];
 
         document.getElementById('download-btn').addEventListener('click', () => {
@@ -601,7 +601,7 @@
                 OBJETO_IMPUESTOS: "02", PORCIVA: 0.16,
                 IVA_TRAS: d.IVA, PORCIEPS: "", IEPS_TRAS: "",
                 TOTAL: d.TOTAL,
-                PERIODICIDAD: "", MES: "", ANIO: "", REFERENCIAS_COMENTARIOS: ""
+                PERIODICIDAD: "", MES: "", ANO: "", REFERENCIAS_COMENTARIOS: ""
             }));
 
             const ws = XLSX.utils.json_to_sheet(exportData, { header: COLUMNAS_FW });
