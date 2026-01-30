@@ -520,8 +520,12 @@
             const { data, error } = await supabaseClient.from('conceptos').insert([
                 { user_id: session.user.id, rfc_cliente: rfc, concepto, clave_sat: clave, unidad }
             ]).select();
-            if (error) alert("Error guardando: " + error.message);
-            else {
+
+            if (error) {
+                // Código 23505 = Unique Violation en Postgres
+                if (error.code === '23505') alert("⚠️ Este concepto ya existe para este cliente.");
+                else alert("Error guardando: " + error.message);
+            } else {
                 cloudConcepts.unshift(data[0]);
                 renderCloudList();
                 document.getElementById('new-concepto').value = '';
@@ -569,13 +573,19 @@
 
                     if (newConcepts.length === 0) throw new Error("No se encontraron registros válidos");
 
-                    // Inserción por lotes (Chunking) para evitar limites de timeout
+                    // Inserción por lotes (Chunking) usando UPSERT para ignorar duplicados
                     const CHUNK_SIZE = 50;
                     let insertedCount = 0;
 
                     for (let i = 0; i < newConcepts.length; i += CHUNK_SIZE) {
                         const chunk = newConcepts.slice(i, i + CHUNK_SIZE);
-                        const { error } = await supabaseClient.from('conceptos').insert(chunk);
+
+                        // UPSERT con onConflict y ignoreDuplicates: true
+                        const { error } = await supabaseClient.from('conceptos').upsert(chunk, {
+                            onConflict: 'rfc_cliente, concepto',
+                            ignoreDuplicates: true
+                        });
+
                         if (error) {
                             console.error("Error en lote:", error);
                             continue;
@@ -583,7 +593,7 @@
                         insertedCount += chunk.length;
                     }
 
-                    alert(`✅ Procesados ${insertedCount} conceptos correctamente.`);
+                    alert(`✅ Proceso finalizado. Se agregaron los conceptos nuevos y se ignoraron los repetidos.`);
                     await loadCloudConcepts(); // Recargar lista
 
                 } catch (err) {
